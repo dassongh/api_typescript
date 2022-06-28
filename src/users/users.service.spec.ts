@@ -15,6 +15,7 @@ const ConfigServiceMock: IConfigService = {
 const UsersRepositoryMock: IUsersRepository = {
 	find: jest.fn(),
 	create: jest.fn(),
+	getAll: jest.fn(),
 };
 
 const container = new Container();
@@ -32,6 +33,8 @@ beforeAll(() => {
 	usersService = container.get<IUserService>(TYPES.UserService);
 });
 
+let createdUser: UserModel | null;
+
 describe('User Service', () => {
 	it('createUser', async () => {
 		configService.get = jest.fn().mockReturnValueOnce('stupify');
@@ -44,7 +47,7 @@ describe('User Service', () => {
 			}),
 		);
 
-		const createdUser = await usersService.createUser({
+		createdUser = await usersService.createUser({
 			email: 'hogwarts@mail.com',
 			name: 'Ron',
 			password: 'stupify',
@@ -52,5 +55,32 @@ describe('User Service', () => {
 
 		expect(createdUser?.id).toEqual(1);
 		expect(createdUser?.password).not.toEqual('stupify');
+	});
+
+	it('validateUser - success', async () => {
+		usersRepository.find = jest.fn().mockReturnValueOnce(createdUser);
+		const result = await usersService.validateUser({
+			email: 'hogwarts@mail.com',
+			password: 'stupify',
+		});
+		expect(result).toBeTruthy();
+	});
+
+	it('validateUser - wrong password', async () => {
+		usersRepository.find = jest.fn().mockReturnValueOnce(createdUser);
+		const result = await usersService.validateUser({
+			email: 'hogwarts@mail.com',
+			password: 'pesto',
+		});
+		expect(result).toBeFalsy();
+	});
+
+	it('validateUser - wrong user', async () => {
+		usersRepository.find = jest.fn().mockReturnValueOnce(null);
+		const result = await usersService.validateUser({
+			email: 'hogwarts@mail.com',
+			password: 'pesto',
+		});
+		expect(result).toBeFalsy();
 	});
 });

@@ -42,6 +42,11 @@ export class UserController extends BaseController implements IUserController {
 				func: this.info,
 				middlewares: [new AuthGuard()],
 			},
+			{
+				path: '/users',
+				method: 'get',
+				func: this.users,
+			},
 		]);
 	}
 
@@ -64,6 +69,13 @@ export class UserController extends BaseController implements IUserController {
 	async info({ user }: Request, res: Response, next: NextFunction): Promise<void> {
 		const userInfo = await this.userService.getUserInfo(user.email);
 		this.ok(res, { name: userInfo?.name, email: userInfo?.email, id: userInfo?.id });
+	}
+
+	async users(req: Request, res: Response, next: NextFunction): Promise<void> {
+		const users = await this.userService.getAllUsers();
+		const result = users.map(({ id, name, email }) => ({ id, name, email }));
+
+		this.ok(res, result);
 	}
 
 	private signJWT(email: string, secret: string): Promise<string> {
